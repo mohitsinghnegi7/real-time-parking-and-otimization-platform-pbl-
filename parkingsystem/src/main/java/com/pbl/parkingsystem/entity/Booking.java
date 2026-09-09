@@ -32,6 +32,10 @@ public class Booking {
     private User user;
 
     @ManyToOne
+    @JoinColumn(name = "vehicle_id")
+    private Vehicle vehicle;
+
+    @ManyToOne
     @JoinColumn(name = "parking_slot_id")
     private ParkingSlot parkingSlot;
 }

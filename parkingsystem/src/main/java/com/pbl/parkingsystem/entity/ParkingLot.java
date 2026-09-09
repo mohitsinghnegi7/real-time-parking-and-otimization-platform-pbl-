@@ -26,5 +26,7 @@ public class ParkingLot {
 
     private String location;
 
-    private Integer totalSlots;
+    private Integer twoWheelerSlots = 0;
+
+    private Integer fourWheelerSlots = 0;
 }

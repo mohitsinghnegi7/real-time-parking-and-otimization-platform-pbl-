@@ -1,9 +1,8 @@
 package com.pbl.parkingsystem.service;
 
-import com.pbl.parkingsystem.entity.ParkingLot;
-import com.pbl.parkingsystem.entity.ParkingSlot;
-import com.pbl.parkingsystem.entity.SlotStatus;
-import com.pbl.parkingsystem.repository.ParkingLotRepository;
+import com.pbl.parkingsystem.entity.*;
+import com.pbl.parkingsystem.repository.FloorRepository;
+import com.pbl.parkingsystem.entity.Floor;
 import com.pbl.parkingsystem.repository.ParkingSlotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,16 +13,40 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ParkingSlotService {
     private final ParkingSlotRepository parkingSlotRepository;
-    private final ParkingLotRepository parkingLotRepository;
+    private final FloorRepository floorRepository;
 
-    public ParkingSlot createSlot(String slotNumber, Long parkingLotId){
-        ParkingLot parkingLot = parkingLotRepository.findById(parkingLotId)
-                .orElseThrow(()->new RuntimeException("Parking Lot not found"));
+    public ParkingSlot createSlot(String slotNumber, Long floorId, VehicleType vehicleType){
+        Floor floor = floorRepository.findById(floorId)
+                .orElseThrow(()->new RuntimeException("Floor not found"));
+
+        ParkingLot parkingLot = floor.getParkingLot();
+
+        long currentCount =
+                parkingSlotRepository.countByFloorParkingLotIdAndVehicleType(
+                        parkingLot.getId(),
+                        vehicleType
+                );
+
+        if (vehicleType == VehicleType.TWO_WHEELER
+                && currentCount >= parkingLot.getTwoWheelerSlots()) {
+
+            throw new RuntimeException(
+                    "Two-wheeler parking capacity is full");
+        }
+
+        if (vehicleType == VehicleType.FOUR_WHEELER
+                && currentCount >= parkingLot.getFourWheelerSlots()) {
+
+            throw new RuntimeException(
+                    "Four-wheeler parking capacity is full");
+        }
+
 
         ParkingSlot parkingSlot = new ParkingSlot();
         parkingSlot.setSlotNumber(slotNumber);
         parkingSlot.setStatus(SlotStatus.AVAILABLE);
-        parkingSlot.setParkingLot(parkingLot);
+        parkingSlot.setVehicleType(vehicleType);
+        parkingSlot.setFloor(floor);
 
         return parkingSlotRepository.save(parkingSlot);
     }
@@ -50,7 +73,19 @@ public class ParkingSlotService {
     }
 
     public List<ParkingSlot> getAvailableSlotsByParkingLot(Long parkingLotId) {
-        return parkingSlotRepository.findByParkingLotIdAndStatus(
-                parkingLotId, SlotStatus.AVAILABLE );
+        return parkingSlotRepository.findByFloorParkingLotIdAndStatus(
+                parkingLotId,
+                SlotStatus.AVAILABLE
+        );
+
+    }
+
+    public List<ParkingSlot> getAvailableSlotsByFloor(
+            Long floorId) {
+
+        return parkingSlotRepository.findByFloorIdAndStatus(
+                floorId,
+                SlotStatus.AVAILABLE
+        );
     }
 }

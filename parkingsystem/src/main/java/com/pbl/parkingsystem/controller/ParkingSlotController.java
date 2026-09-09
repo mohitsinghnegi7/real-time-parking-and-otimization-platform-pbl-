@@ -2,6 +2,7 @@ package com.pbl.parkingsystem.controller;
 
 import com.pbl.parkingsystem.entity.ParkingSlot;
 import com.pbl.parkingsystem.entity.SlotStatus;
+import com.pbl.parkingsystem.entity.VehicleType;
 import com.pbl.parkingsystem.service.ParkingSlotService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +18,9 @@ public class ParkingSlotController {
 
     @PostMapping
     public ResponseEntity<ParkingSlot> createSlot(@RequestParam String slotNumber,
-                                                  @RequestParam Long parkingLotId) {
-        return ResponseEntity.ok(parkingSlotService.createSlot(slotNumber,parkingLotId));
+                                                  @RequestParam Long floorId,
+                                                  @RequestParam VehicleType vehicleType) {
+        return ResponseEntity.ok(parkingSlotService.createSlot(slotNumber,floorId,vehicleType));
     }
 
     @GetMapping
@@ -29,6 +31,14 @@ public class ParkingSlotController {
     @GetMapping("/available")
     public ResponseEntity<List<ParkingSlot>> getAvailableSlots() {
         return ResponseEntity.ok(parkingSlotService.getAvailableSlots());
+    }
+    @GetMapping("/floor/{floorId}/available")
+    public ResponseEntity<List<ParkingSlot>> getAvailableSlotsByFloor(
+            @PathVariable Long floorId) {
+
+        return ResponseEntity.ok(
+                parkingSlotService.getAvailableSlotsByFloor(floorId)
+        );
     }
 
     @GetMapping("/{id}")
