@@ -1,15 +1,13 @@
+
 package com.pbl.parkingsystem.entity;
 
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.boot.autoconfigure.web.WebProperties;
+
+import java.math.BigDecimal;
 
 @Entity(name = "parking_lots")
 @AllArgsConstructor
@@ -29,4 +27,10 @@ public class ParkingLot {
     private Integer twoWheelerSlots = 0;
 
     private Integer fourWheelerSlots = 0;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal twoWheelerHourlyRate;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal fourWheelerHourlyRate;
 }

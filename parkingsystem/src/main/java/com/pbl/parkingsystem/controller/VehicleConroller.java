@@ -10,16 +10,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/vehilces")
+@RequestMapping("/api/vehicles")
 @RequiredArgsConstructor
 public class VehicleConroller {
     private final VehicleService vehicleService;
 
     @PostMapping
     public ResponseEntity<Vehicle> addVehicle(@RequestParam Long userId,
-                                              @RequestParam String vehicelNumber,
+                                              @RequestParam String vehicleNumber,
                                               @RequestParam VehicleType vehicleType){
-        return ResponseEntity.ok(vehicleService.addVehicle(userId, vehicelNumber, vehicleType));
+        return ResponseEntity.ok(vehicleService.addVehicle(userId, vehicleNumber, vehicleType));
     }
 
     @GetMapping("/user/{userId}")

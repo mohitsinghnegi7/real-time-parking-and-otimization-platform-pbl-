@@ -28,4 +28,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("endTime") LocalDateTime endTime,
             @Param("statuses") List<BookingStatus> statuses
     );
+
+    boolean existsByParkingSlotId(Long parkingSlotId);
 }

@@ -1,6 +1,6 @@
 package com.pbl.parkingsystem.entity;
 
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,6 +12,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ParkingSlot {
 
     @Id
@@ -26,7 +27,8 @@ public class ParkingSlot {
     @Enumerated(EnumType.STRING)
     private VehicleType vehicleType;
 
-    @ManyToOne
-    @JoinColumn(name = "floor_id")
-    private Floor floor;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parking_lot_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private ParkingLot parkingLot;
 }

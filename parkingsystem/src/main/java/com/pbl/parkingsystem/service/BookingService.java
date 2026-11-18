@@ -1,12 +1,18 @@
+
 package com.pbl.parkingsystem.service;
 
+import com.pbl.parkingsystem.dto.BookingResponse;
 import com.pbl.parkingsystem.entity.*;
+
 import com.pbl.parkingsystem.repository.BookingRepository;
 import com.pbl.parkingsystem.repository.ParkingSlotRepository;
 import com.pbl.parkingsystem.repository.UserRepository;
 import com.pbl.parkingsystem.repository.VehicleRepository;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,7 +26,9 @@ public class BookingService {
     private final VehicleRepository vehicleRepository;
     private final ParkingSlotRepository parkingSlotRepository;
 
-    public Booking createBooking(
+    // Create booking
+    @Transactional
+    public BookingResponse createBooking(
             Long userId,
             Long vehicleId,
             Long parkingSlotId,
@@ -35,6 +43,7 @@ public class BookingService {
                 .orElseThrow(() ->
                         new RuntimeException("Vehicle not found"));
 
+        // Verify vehicle ownership
         if (!vehicle.getUser().getId().equals(userId)) {
             throw new RuntimeException(
                     "Vehicle does not belong to this user");
@@ -49,11 +58,13 @@ public class BookingService {
                     "Parking slot is not available");
         }
 
+        // Verify vehicle and slot type
         if (vehicle.getVehicleType() != slot.getVehicleType()) {
             throw new RuntimeException(
                     "Vehicle type does not match parking slot type");
         }
 
+        // Validate booking time
         if (startTime == null || endTime == null) {
             throw new RuntimeException(
                     "Start time and end time are required");
@@ -64,6 +75,12 @@ public class BookingService {
                     "Invalid booking time");
         }
 
+        if (!startTime.isAfter(LocalDateTime.now())) {
+            throw new RuntimeException(
+                    "Booking start time must be in the future");
+        }
+
+        // Check overlapping bookings
         long overlappingBookings =
                 bookingRepository.countOverlappingBookings(
                         parkingSlotId,
@@ -77,10 +94,10 @@ public class BookingService {
 
         if (overlappingBookings > 0) {
             throw new RuntimeException(
-                    "Parking slot is already booked for this time"
-            );
+                    "Parking slot is already booked for this time");
         }
 
+        // Create pending booking
         Booking booking = new Booking();
 
         booking.setUser(user);
@@ -88,24 +105,38 @@ public class BookingService {
         booking.setParkingSlot(slot);
         booking.setStartTime(startTime);
         booking.setEndTime(endTime);
-        booking.setStatus(BookingStatus.CONFIRMED);
 
+        // Booking will be confirmed after successful payment
+        booking.setStatus(BookingStatus.PENDING);
+
+        // Temporarily reserve the slot
         slot.setStatus(SlotStatus.RESERVED);
 
         parkingSlotRepository.save(slot);
 
-        return bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+
+        return convertToResponse(savedBooking);
     }
 
+    // Get all bookings of a user
+    public List<BookingResponse> getUserBookings(Long userId) {
 
-    public List<Booking> getUserBookings(Long userId) {
         if (!userRepository.existsById(userId)) {
             throw new RuntimeException("User not found");
         }
-        return bookingRepository.findByUserId(userId);
+
+        return bookingRepository.findByUserId(userId)
+                .stream()
+                .map(this::convertToResponse)
+                .toList();
     }
 
-    public Booking cancelBooking(Long bookingId, Long userId) {
+    // Cancel booking
+    @Transactional
+    public BookingResponse cancelBooking(
+            Long bookingId,
+            Long userId) {
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() ->
@@ -126,6 +157,16 @@ public class BookingService {
                     "Completed booking cannot be cancelled");
         }
 
+        // Do not allow cancellation of a paid booking here.
+        // A refund workflow is required for that.
+        boolean paymentSuccessful = booking.getStatus()
+                == BookingStatus.CONFIRMED;
+
+        if (paymentSuccessful) {
+            throw new RuntimeException(
+                    "Paid booking cannot be cancelled without refund processing");
+        }
+
         booking.setStatus(BookingStatus.CANCELLED);
 
         ParkingSlot slot = booking.getParkingSlot();
@@ -133,7 +174,30 @@ public class BookingService {
 
         parkingSlotRepository.save(slot);
 
-        return bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+
+        return convertToResponse(savedBooking);
+    }
+
+    // Convert entity to response DTO
+    private BookingResponse convertToResponse(Booking booking) {
+
+        ParkingSlot slot = booking.getParkingSlot();
+        ParkingLot parkingLot = slot.getParkingLot();
+        Vehicle vehicle = booking.getVehicle();
+
+        return new BookingResponse(
+                booking.getId(),
+                booking.getUser().getId(),
+                vehicle.getId(),
+                vehicle.getVehicleNumber(),
+                slot.getId(),
+                slot.getSlotNumber(),
+                parkingLot.getId(),
+                parkingLot.getName(),
+                booking.getStartTime(),
+                booking.getEndTime(),
+                booking.getStatus()
+        );
     }
 }
-

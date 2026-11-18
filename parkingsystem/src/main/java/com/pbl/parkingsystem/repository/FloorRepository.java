@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface FloorRepository extends JpaRepository<Floor, Long> {
     List<Floor> findByParkingLotId(Long parkingLotId);
+
+    List<Floor> findByParkingLot_Id(Long parkingLotId);
 }
